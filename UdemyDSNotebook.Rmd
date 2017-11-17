@@ -1,0 +1,82 @@
+---
+title: "Udemy Introduction to Data Science Notebook"
+output:
+  html_document: default
+  html_notebook: default
+---
+
+This is my personal notebook from Udemy's Indroduction to Data Science course (taught by Nina Zumel and John Mount). It focuses on supervised learning methods using R.
+
+#Section 1: Course Overview 
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+# Load packages
+library(tidyverse)
+library(ggplot2)
+```
+
+My notes on this section are pretty sparse since I'm already familiar with R, but I walked through their example that uses home price data from amstat since that looks like a good dataset to use for practice later. Here, we are pulling in a tab-seperated file of home prices and key facts related to those homes straight from its URL. We also rename the columns to make them more useful.   
+
+```{r}
+#Pull homeprice data straight from the amstat website
+URL <- "https://ww2.amstat.org/publications/jse/datasets/homes76.dat.txt"
+#Documentation on this dataset: http://ww2.amstat.org/publications/jse/v16n2/datasets.pardoe.html
+
+data <- read.table(URL, header = TRUE , sep = "\t" , stringsAsFactors = TRUE)
+
+#Rename columns
+colnames(data) <- c("id","Price","Size","Lot","Bed","Bath","BathBed","Year","Age","Agesq","Garage","Status","Active","Elem","Edison Elem","Harris Elem","Adams Elem","Crest Elem","Parker Elem")
+```
+
+I also created a couple of basic plots to answer some of the quick questions I had right off the bat. I may come back and pretty these up later if I'm feeling plotty. 
+
+How many homes are near each elementary school? 
+
+```{r, echo = FALSE}
+ggplot(data,aes(Elem)) + geom_bar(stat = "count")
+```
+
+What's the general distrubtution of home prices? 
+
+```{r, echo = FALSE}
+ggplot(data) + geom_density(aes(x = Price))
+```
+
+
+#Section 2: Modeling and Machine Learning 
+
+##Validating Models Overview
+
+Always remember to validate your model on data that it hasn't yet seen. If you want it to be predictive, you have to evaluate its performance with data outside the training set. Possible issues that may arise: 
+
+* Bias
+    + systematic error in certain regions of the data 
+    + inductive bias - assumptions made in modeling (eg linear regression assumes linear relationship and additive relationship between variables)
+    + there is a bias - variance tradeoff
+* Variance 
+    + overly sensitive to small variations in training data
+    + produces very different models depending on the specific training set chosen from the same distribution of data
+    + models with high variance are prone to overfit
+* Overfit 
+    + model is memorizing traning data rather than generalizing good patterns 
+    + you know your model is overfit if it performs well in traning, but poorly with test data 
+  
+Split the data to avoid overfit. Your model will usually have a smaller traning error than test error. A small generalization error means your model is less likely to be overfitting. (Also, heads up cause some people refer to the test error the generalization error).
+
+> Traning Error - Test Error = Generalization Error
+
+Best solution for evaluation? Split the data 3 ways (if you have enough of it!):
+
+* Training set - train models
+* Calibration set - make adjustments before final model selection (set params, evaluate models) 
+* Test set - evaluate final model... just one!
+
+cross vali emperical resampling
+Often random splits will work, but some cases (time series, duplicate records, multiple records from one source) require a structured test/train split. 
+
+
+
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
