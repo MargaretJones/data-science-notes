@@ -22,10 +22,10 @@ My notes on this section are pretty sparse since I'm already familiar with R, bu
 URL <- "https://ww2.amstat.org/publications/jse/datasets/homes76.dat.txt"
 #Documentation on this dataset: http://ww2.amstat.org/publications/jse/v16n2/datasets.pardoe.html
 
-data <- read.table(URL, header = TRUE , sep = "\t" , stringsAsFactors = TRUE)
+priceData <- read.table(URL, header = TRUE , sep = "\t" , stringsAsFactors = TRUE)
 
 #Rename columns
-colnames(data) <- c("id","Price","Size","Lot","Bed","Bath","BathBed","Year","Age","Agesq","Garage","Status","Active","Elem","Edison Elem","Harris Elem","Adams Elem","Crest Elem","Parker Elem")
+colnames(priceData) <- c("id","Price","Size","Lot","Bed","Bath","BathBed","Year","Age","Agesq","Garage","Status","Active","Elem","Edison Elem","Harris Elem","Adams Elem","Crest Elem","Parker Elem")
 ```
 
 I also created a couple of basic plots to answer some of the quick questions I had right off the bat. I may come back and pretty these up later if I'm feeling plotty. 
@@ -33,13 +33,13 @@ I also created a couple of basic plots to answer some of the quick questions I h
 How many homes are near each elementary school? 
 
 ```{r, echo = FALSE}
-ggplot(data,aes(Elem)) + geom_bar(stat = "count")
+ggplot(priceData,aes(Elem)) + geom_bar(stat = "count")
 ```
 
 What's the general distrubtution of home prices? 
 
 ```{r, echo = FALSE}
-ggplot(data) + geom_density(aes(x = Price))
+ggplot(priceData) + geom_density(aes(x = Price))
 ```
 
 
@@ -80,6 +80,10 @@ Ok, the video walks through an example predicting baseball players' salary, but 
 I've looked at the data a little bit, and weirdly, there doesn't seem to be a strong relationship between square foot and price or age and price. I'm going to see how a model that combines Age, Elem, Garage, and Size does at predicting home price! I'm worried about a model with so many variables & so little data overfitting, so I'll try to keep an eye out for that.    
 
 ```{r}
+#Add a new column called logPrice to model on
+priceData <- priceData %>%
+  mutate(logPrice = log(Price))
+
 priceData %>%
 ggplot() + 
   geom_jitter(aes(x = Garage, y = logPrice, color = Elem))
@@ -88,10 +92,6 @@ ggplot() +
 Hold back 25% of the data for a test set.  
 
 ```{r}
-#Add a new column called logPrice to model on
-priceData <- data %>%
-  mutate(logPrice = log(Price))
-
 #outcome you're trying to predict
 outcome <- "logPrice"
 
@@ -101,7 +101,7 @@ vars <- priceData %>%
   colnames()
 
 #Split randomly
-set.seed(45433622)
+set.seed(42770)
 
 nr = nrow(priceData)
 #make the test/train assignments (set aside 25% of data for test)
@@ -129,7 +129,7 @@ model <- lm(fmla,data=train)
 summary(model)
 ```
 
-Literally w. t. f. How is garage size the apparent driving variable??
+Hmmm, none of the variables in this set seem to matter much. Other splits have also suggested that garage size might be important, and that Edison Elementary might be have the most predictive power in terms of home price. 
 
 ```{r}
 #create a prediction of price
@@ -155,9 +155,8 @@ ggplot(perf, aes(x=pred, y=logPrice, color=is.test)) +
 
 ```
 
-Mmm look at that scatter... I don't think I'm over fitting, but I also have some weak-ass predictive capability. Also, for this slice of data, the test error is actually better than the traning error. Go figure. I knew I might have issues with a tiny dataset. Or it may be that a linear model just isn't the best for this. 
+Mmm look at that scatter... My r-squared was 0.41. The training error was 0.162, and the test error was 0.170, so I might not be overfitting, but I also don't seem to be doing well at prediction. I knew I might have issues with a tiny dataset. Or it may be that a linear model just isn't the best for this. One issue, is that the way I split my test/train data has a large affect on which variables the model thinks are important. Sometimes it's a totally garage-size dominated model (seriously!), other times, the elementary schools or size of the house also seem important. 
 
 
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
 
