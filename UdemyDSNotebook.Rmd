@@ -117,7 +117,7 @@ priceData$is.test <- is.test
 ```
 
 
-Ok, so we're split between a test set and training set. Let's try fitting our first model! 
+Ok, so we're split between a test set and training set. One important thing to note here is that it really matters HOW do do this split for a data set this size. That suggests to me that maybe this data set is just to small to do what I'm trying to do with it? One issue, is that the factor variable Elem has only 3 observations with the level "adams." If they all end up in the test data without training on it, that will cause an error with this message, so it's nessessary to at least ensure that doesn't happen. (Though I think there's issues with modeling a whole factor level based on just the 1-2 observations that may have ended up in the training data). Just for fun though, let's try fitting our first model! 
 
 ```{r}
 fmla <- paste(outcome, "~", paste(vars, collapse="+"))
