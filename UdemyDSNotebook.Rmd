@@ -15,7 +15,7 @@ library(tidyverse)
 library(ggplot2)
 ```
 
-My notes on this section are pretty sparse since I'm already familiar with R, but I walked through their example that uses home price data from amstat since that looks like a good dataset to use for practice later. Here, we are pulling in a tab-seperated file of home prices and key facts related to those homes straight from its URL. We also rename the columns to make them more useful.   
+My notes on this section are pretty sparse since I'm already familiar with R, but I walked through their example that uses home price data from amstat since that looks like it will be a good dataset to use for practice later. Here, we are pulling in a tab-seperated file of home prices and key facts related to those homes straight from its URL. We also rename the columns to make them more useful.   
 
 ```{r}
 #Pull homeprice data straight from the amstat website
@@ -52,7 +52,7 @@ Always remember to validate your model on data that it hasn't yet seen. If you w
 * Bias
     + systematic error in certain regions of the data 
     + inductive bias - assumptions made in modeling (eg linear regression assumes linear relationship and additive relationship between variables)
-    + there is a bias - variance tradeoff
+    + note: there is a bias - variance tradeoff
 * Variance 
     + overly sensitive to small variations in training data
     + produces very different models depending on the specific training set chosen from the same distribution of data
@@ -71,10 +71,91 @@ Best solution for evaluation? Split the data 3 ways (if you have enough of it!):
 * Calibration set - make adjustments before final model selection (set params, evaluate models) 
 * Test set - evaluate final model... just one!
 
-cross vali emperical resampling
-Often random splits will work, but some cases (time series, duplicate records, multiple records from one source) require a structured test/train split. 
+Look into cross validation and emperical resampling if you only have a little data. Also, often random splits will work, but some cases (eg. time series, duplicate records, multiple records from one source) require a structured test/train split. 
+
+##Test/Train Split Example
+
+Ok, the video walks through an example predicting baseball players' salary, but I'm going to use the homes data from Section 1 so I don't have to load in a second outside data set. (Plus it'll give me a chance to think about how to apply the concepts to similar but different data). One issue with using the home price data... we only have 76 data points, so this might be kind of crummy.
+
+I've looked at the data a little bit, and weirdly, there doesn't seem to be a strong relationship between square foot and price or age and price. I'm going to see how a model that combines Age, Elem, Garage, and Size does at predicting home price! I'm worried about a model with so many variables & so little data overfitting, so I'll try to keep an eye out for that.    
+
+```{r}
+priceData %>%
+ggplot() + 
+  geom_jitter(aes(x = Garage, y = logPrice, color = Elem))
+```
+
+Hold back 25% of the data for a test set.  
+
+```{r}
+#Add a new column called logPrice to model on
+priceData <- data %>%
+  mutate(logPrice = log(Price))
+
+#outcome you're trying to predict
+outcome <- "logPrice"
+
+#Set input variables (everything except the price, home id, and log price)
+vars <- priceData %>%
+  select(Size, BathBed, Age, Elem, Garage) %>%
+  colnames()
+
+#Split randomly
+set.seed(45433622)
+
+nr = nrow(priceData)
+#make the test/train assignments (set aside 25% of data for test)
+is.test <- runif(nr) <= 0.25
+
+#split the data
+test <- priceData[is.test, ]
+train <- priceData[!is.test, ]
+
+# put the test marker back in the data for reproducability
+priceData$is.test <- is.test
+
+```
 
 
+Ok, so we're split between a test set and training set. Let's try fitting our first model! 
+
+```{r}
+fmla <- paste(outcome, "~", paste(vars, collapse="+"))
+
+#model on the training data
+model <- lm(fmla,data=train)
+
+#check out dem stats
+summary(model)
+```
+
+Literally w. t. f. How is garage size the apparent driving variable??
+
+```{r}
+#create a prediction of price
+pricePred <- predict(model, newdata = priceData)
+
+#create a df of price, predicted price, and whether it was part of the training data 
+perf <- data.frame(logPrice = priceData[[outcome]],
+                   pred = pricePred, is.test=priceData$is.test)
+
+#calc the squared error 
+sqerr <- (perf$logPrice - perf$pred)^2
+
+#training error
+sqrt(mean(sqerr[!is.test]))
+
+#test error 
+sqrt(mean(sqerr[is.test]))
+
+
+ggplot(perf, aes(x=pred, y=logPrice, color=is.test)) + 
+  geom_point(aes(shape = is.test)) +
+  geom_abline(slope = 1)
+
+```
+
+Mmm look at that scatter... I don't think I'm over fitting, but I also have some weak-ass predictive capability. Also, for this slice of data, the test error is actually better than the traning error. Go figure. I knew I might have issues with a tiny dataset. Or it may be that a linear model just isn't the best for this. 
 
 
 
